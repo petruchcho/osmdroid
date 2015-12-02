@@ -2,36 +2,73 @@ package org.osmdroid.tileprovider.tilesource;
 
 import android.util.Log;
 
-import org.osmdroid.ResourceProxy.string;
 import org.osmdroid.tileprovider.MapTile;
 
 /**
  * This class will allow you to overlay tiles from a WMS server.  Your WMS
  * server needs to support .  An example of how your base url should look:
- *
+ * <p/>
  * https://xxx.xxx.xx.xx/geoserver/gwc/service/wms?LAYERS=base_map&FORMAT=image/jpeg
  * &SERVICE=WMS&VERSION=1.1.1REQUEST=GetMap&STYLES=&SRS=EPSG:900913&WIDTH=256&HEIGHT=256&BBOX=
- *
+ * <p/>
  * Notice three things:
  * 1. I am pulling jpeg instead of png files.  For some reason our server
  * makes much smaller jpg files and this gives us a faster load time on
  * mobile networks.
- * 2. The bounding box is at the end of the base url. This is because the 
+ * 2. The bounding box is at the end of the base url. This is because the
  * getTileURLString method adds the bounding box values onto the end of
  * the base url.
  * 3. We are pulling the SRS=EPSG:900913 and not the SRS=EPSG:4326.
  * This all has to do drawing rounded maps onto flat displays.
  *
  * @author Steve Potell -- spotell@t-sciences.com
- *
  */
 public class WMSTileSource extends OnlineTileSourceBase {
+
+    public final static double ORIGIN_SHIFT = Math.PI * 6378137;
 
     public WMSTileSource(final String aName,
                          final int aZoomMinLevel, final int aZoomMaxLevel, final int aTileSizePixels,
                          final String aImageFilenameEnding, final String[] aBaseUrl) {
         super(aName, aZoomMinLevel, aZoomMaxLevel, aTileSizePixels,
                 aImageFilenameEnding, aBaseUrl);
+    }
+
+    /**
+     * Converts X tile number to EPSG value.
+     *
+     * @param tileX the x tile being requested.
+     * @param zoom  The current zoom level.
+     * @return EPSG longitude value.
+     */
+    public static double xToWgs84toEPSGLon(int tileX, int zoom) {
+
+        // convert x tile position and zoom to wgs84 longitude
+        double value = tileX / Math.pow(2.0, zoom) * 360.0 - 180;
+
+        // apply the shift to get the EPSG longitude
+        return value * ORIGIN_SHIFT / 180.0;
+
+    }
+
+    /**
+     * Converts Y tile number to EPSG value.
+     *
+     * @param tileY the y tile being requested.
+     * @param zoom  The current zoom level.
+     * @return EPSG latitude value.
+     */
+    public static double yToWgs84toEPSGLat(int tileY, int zoom) {
+
+        // convert x tile position and zoom to wgs84 latitude
+        double value = Math.PI - (2.0 * Math.PI * tileY) / Math.pow(2.0, zoom);
+        value = Math.toDegrees(Math.atan(Math.sinh(value)));
+
+        value = Math.log(Math.tan((90 + value) * Math.PI / 360.0)) / (Math.PI / 180.0);
+
+        // apply the shift to get the EPSG latitude
+        return value * ORIGIN_SHIFT / 180.0;
+
     }
 
     @Override
@@ -44,8 +81,6 @@ public class WMSTileSource extends OnlineTileSourceBase {
         Log.d("MapTile", "--------------- link = " + tileURLString.toString());
         return tileURLString.toString();
     }
-
-    private final static double ORIGIN_SHIFT = Math.PI * 6378137;
 
     /**
      * WMS requires the bounding box to be defined as the point (west, south)
@@ -72,22 +107,11 @@ public class WMSTileSource extends OnlineTileSourceBase {
     }
 
     /**
-     * A simple class for holding the NSEW lat and lon values.
-     */
-    class BoundingBox {
-        double north;
-        double south;
-        double east;
-        double west;
-    }
-
-    /**
      * This method converts tile xyz values to a WMS bounding box.
      *
      * @param x    The x tile coordinate.
      * @param y    The y tile coordinate.
      * @param zoom The zoom level.
-     *
      * @return The completed bounding box.
      */
     BoundingBox tile2boundingBox(final int x, final int y, final int zoom) {
@@ -103,42 +127,12 @@ public class WMSTileSource extends OnlineTileSourceBase {
     }
 
     /**
-     * Converts X tile number to EPSG value.
-     *
-     * @param tileX the x tile being requested.
-     * @param zoom  The current zoom level.
-     *
-     * @return EPSG longitude value.
+     * A simple class for holding the NSEW lat and lon values.
      */
-    static double xToWgs84toEPSGLon(int tileX, int zoom) {
-
-        // convert x tile position and zoom to wgs84 longitude
-        double value = tileX / Math.pow(2.0, zoom) * 360.0 - 180;
-
-        // apply the shift to get the EPSG longitude
-        return value * ORIGIN_SHIFT / 180.0;
-
+    class BoundingBox {
+        double north;
+        double south;
+        double east;
+        double west;
     }
-
-    /**
-     * Converts Y tile number to EPSG value.
-     *
-     * @param tileY the y tile being requested.
-     * @param zoom  The current zoom level.
-     *
-     * @return EPSG latitude value.
-     */
-    static double yToWgs84toEPSGLat(int tileY, int zoom) {
-
-        // convert x tile position and zoom to wgs84 latitude
-        double value = Math.PI - (2.0 * Math.PI * tileY) / Math.pow(2.0, zoom);
-        value = Math.toDegrees(Math.atan(Math.sinh(value)));
-
-        value = Math.log(Math.tan((90 + value) * Math.PI / 360.0)) / (Math.PI / 180.0);
-
-        // apply the shift to get the EPSG latitude
-        return value * ORIGIN_SHIFT / 180.0;
-
-    }
-
 }
