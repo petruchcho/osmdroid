@@ -2,14 +2,13 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.1"
-
+    buildToolsVersion "23.0.2"
     defaultConfig {
-        applicationId "org.osmdroid.example"
+        applicationId 'org.osmdroid'
         minSdkVersion 8
         targetSdkVersion 23
-        versionCode 16
-        versionName "4.4-SNAPSHOT"
+        versionCode 18
+        versionName "5.1-SNAPSHOT"
     }
     buildTypes {
         release {
@@ -28,9 +27,8 @@ android {
     }
 }
 
-
 dependencies {
-    compile 'android.support:compatibility-v4:23+'
+    compile 'com.android.support:support-v4:23+'
     compile project(':osmdroid-android')
-    //compile 'org.osmdroid:osmdroid-third-party:4.4-SNAPSHOT'
+    //compile 'org.osmdroid:osmdroid-third-party:5.0-SNAPSHOT'
 }
